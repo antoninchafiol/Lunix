@@ -10,6 +10,7 @@ mov bx, _sload
 call print
 call print_nl
 
+mov bx, 0x9000
 mov dh, 2
 call disk_load
 

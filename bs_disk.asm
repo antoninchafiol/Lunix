@@ -15,20 +15,20 @@ disk_load:
     pop dx 
     cmp al, dh
     jne sector_fail
-
     popa
     ret
+
 disk_fail:
     mov bx, DISK_ERROR
     call print
     jmp disk_loop
+
 sector_fail:
     mov bx, SECTORS_ERROR
     call print
 
 disk_loop:
     jmp $
-
 
 DISK_ERROR:
     db 'Disk read error', 0
