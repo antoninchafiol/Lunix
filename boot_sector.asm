@@ -10,10 +10,20 @@ mov bx, _sload
 call print
 call print_nl
 
-mov bx, 0x9000
+mov bx, 0x9000 ; needed for 
 mov dh, 2
 call disk_load
 
+mov bx, [0x9000+512]
+call print
+
+mov dx, [0x9000] ; retrieve the first loaded word, 0xdada
+call print_hex
+
+call print_nl
+
+mov dx, [0x9000 + 512] ; first word from second loaded sector, 0xface
+call print_hex
 jmp $ 
 
 %include "bs_string.asm"
@@ -29,4 +39,4 @@ times 510 - ($-$$) db 0
 dw 0xaa55 
 
 times 256 dw 0xdada 
-times 256 dw 0xface 
+dw 0xdead
