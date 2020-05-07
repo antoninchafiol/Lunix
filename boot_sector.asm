@@ -1,23 +1,17 @@
 [org 0x7c00]
+KERNEL_OFFSET equ 0x1000 ; The same one we used when linking the kernel
 
-mov bp, 0x9000 ; setting the stack away enough 
-mov sp, bp 
+    mov [BOOT_DRIVE], dl ; Remember that the BIOS sets us the boot drive in 'dl' on boot
+    mov bp, 0x9000
+    mov sp, bp
 
-mov bx, _pstring
-call print
-call print_nl
-; mov bx, _sload
-; call print
-; call print_nl
+    mov bx, MSG_REAL_MODE 
+    call print
+    call print_nl
 
-; mov bx, 0x9000 ; needed for 
-; mov dh, 2
-; call disk_load
-
-; mov bx, [0x9000+512]
-; call print
-call switch_to_pm
-jmp $ 
+    call load_kernel ; read the kernel from disk
+    call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
+    jmp $ ; Never executed
 
 %include "bs_string.asm"
 %include "bs_disk.asm"
@@ -25,23 +19,31 @@ jmp $
 %include "bs_32gdt.asm"
 %include "bs_32switch.asm"
 
+[bits 16]
+load_kernel:
+    mov bx, MSG_LOAD_KERNEL
+    call print
+    call print_nl
+
+    mov bx, KERNEL_OFFSET ; Read from disk and store in 0x1000
+    mov dh, 2
+    mov dl, [BOOT_DRIVE]
+    call disk_load
+    ret
+
 [bits 32]
 BEGIN_PM:
     mov ebx, MSG_PROT_MODE
     call print_string_pm
-    jmp $ 
+    call KERNEL_OFFSET ; Give control to the kernel
+    jmp $ ; Stay here when the kernel returns control to us (if ever)
 
-_pstring:
-    db 'Welcome to the Lunix system !', 0
 
-_sload:
-    db 'Loading from disk', 0
+BOOT_DRIVE db 0 ; It is a good idea to store it in memory because 'dl' may get overwritten
+MSG_REAL_MODE db "Started in 16-bit Real Mode", 0
+MSG_PROT_MODE db "Landed in 32-bit Protected Mode", 0
+MSG_LOAD_KERNEL db "Loading kernel into memory", 0
 
-MSG_PROT_MODE:
-    db '32 bits protected mode loaded !', 0
-
+; padding
 times 510 - ($-$$) db 0
-dw 0xaa55 
-
-; times 256 dw 0xdada 
-; times 256 dw 0xdead
+dw 0xaa55
